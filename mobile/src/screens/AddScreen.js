@@ -21,6 +21,7 @@ export default function AddScreen({ navigation }) {
   const [tagsText, setTagsText] = useState('');
   const [selectedLists, setSelectedLists] = useState([]);
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const toggleList = (list) => {
     setSelectedLists((current) => current.includes(list)
@@ -28,39 +29,49 @@ export default function AddScreen({ navigation }) {
       : [...current, list]);
   };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
+    if (submitting) return;
+
     if (!name.trim() || !city.trim() || !country.trim()) {
       setError('Name, city and country are required.');
       return;
     }
 
-    const place = addPlace({
-      name,
-      type,
-      city,
-      country,
-      imageUrl: imageUrl || defaultImage,
-      caption,
-      status,
-      rating,
-      price,
-      note,
-      tags: tagsText.split(',').map((tag) => tag.trim()).filter(Boolean),
-      lists: selectedLists,
-    });
-
-    setName('');
-    setCity('');
-    setCountry('');
-    setImageUrl('');
-    setCaption('');
-    setNote('');
-    setTagsText('');
-    setSelectedLists([]);
-    setRating(0);
+    setSubmitting(true);
     setError('');
 
-    navigation.navigate('PlaceDetails', { placeId: place.id });
+    try {
+      const place = await addPlace({
+        name,
+        type,
+        city,
+        country,
+        imageUrl: imageUrl || defaultImage,
+        caption,
+        status,
+        rating,
+        price,
+        note,
+        tags: tagsText.split(',').map((tag) => tag.trim()).filter(Boolean),
+        lists: selectedLists,
+      });
+
+      setName('');
+      setCity('');
+      setCountry('');
+      setImageUrl('');
+      setCaption('');
+      setNote('');
+      setTagsText('');
+      setSelectedLists([]);
+      setRating(0);
+
+      navigation.navigate('PlaceDetails', { placeId: place.id });
+    } catch (saveError) {
+      setError(saveError.message || 'Unable to add this place.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -123,9 +134,9 @@ export default function AddScreen({ navigation }) {
 
           {!!error && <Text style={styles.error}>{error}</Text>}
 
-          <TouchableOpacity onPress={handleAdd} style={styles.primaryButton}>
-            <Ionicons name="add" size={20} color={colors.background} />
-            <Text style={styles.primaryButtonText}>Add place</Text>
+          <TouchableOpacity disabled={submitting} onPress={handleAdd} style={[styles.primaryButton, submitting && styles.primaryButtonDisabled]}>
+            <Ionicons name={submitting ? 'cloud-upload-outline' : 'add'} size={20} color={colors.background} />
+            <Text style={styles.primaryButtonText}>{submitting ? 'Saving...' : 'Add place'}</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -175,5 +186,6 @@ const styles = StyleSheet.create({
   listChipText: { fontSize: 13, fontWeight: '600', color: colors.text },
   error: { marginTop: spacing.lg, color: '#B42318', fontSize: 13 },
   primaryButton: { marginTop: spacing.xl, height: 52, borderRadius: radius.md, backgroundColor: colors.text, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' },
+  primaryButtonDisabled: { opacity: 0.55 },
   primaryButtonText: { color: colors.background, fontSize: 15, fontWeight: '700' },
 });
