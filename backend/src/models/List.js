@@ -9,4 +9,6 @@ const listSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+listSchema.index({ userKey: 1, name: 1 }, { unique: true });
+
 export default mongoose.model('List', listSchema);
