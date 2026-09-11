@@ -3,6 +3,8 @@ import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import placesRouter from './routes/places.js';
+import listsRouter from './routes/lists.js';
+import savedPlacesRouter from './routes/savedPlaces.js';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -15,6 +17,26 @@ app.get('/health', (_req, res) => {
 });
 
 app.use('/api/places', placesRouter);
+app.use('/api/lists', listsRouter);
+app.use('/api/saved-places', savedPlacesRouter);
+
+app.use((error, _req, res, _next) => {
+  console.error(error);
+
+  if (error?.name === 'ValidationError') {
+    return res.status(400).json({ message: error.message });
+  }
+
+  if (error?.name === 'CastError') {
+    return res.status(400).json({ message: 'Invalid resource identifier' });
+  }
+
+  if (error?.code === 11000) {
+    return res.status(409).json({ message: 'Resource already exists' });
+  }
+
+  res.status(500).json({ message: 'Internal server error' });
+});
 
 async function start() {
   if (!process.env.MONGO_URI) {
