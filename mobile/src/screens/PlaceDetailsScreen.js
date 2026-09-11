@@ -23,6 +23,8 @@ export default function PlaceDetailsScreen({ route, navigation }) {
     );
   }
 
+  const isSaved = place.isSaved !== false;
+
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -32,7 +34,7 @@ export default function PlaceDetailsScreen({ route, navigation }) {
             <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <TouchableOpacity style={[styles.floatingButton, styles.saveButton]} onPress={() => setSaveVisible(true)}>
-            <Ionicons name="bookmark" size={22} color={colors.text} />
+            <Ionicons name={isSaved ? 'bookmark' : 'bookmark-outline'} size={22} color={colors.text} />
           </TouchableOpacity>
         </View>
 
@@ -45,26 +47,26 @@ export default function PlaceDetailsScreen({ route, navigation }) {
           <View style={styles.infoRow}>
             <View style={styles.infoBlock}>
               <Text style={styles.infoLabel}>Status</Text>
-              <Text style={styles.infoValue}>{place.status === 'visited' ? 'Visited' : 'Want to go'}</Text>
+              <Text style={styles.infoValue}>{isSaved ? (place.status === 'visited' ? 'Visited' : 'Want to go') : 'Not saved'}</Text>
             </View>
             <View style={styles.infoBlock}>
               <Text style={styles.infoLabel}>Rating</Text>
-              <Text style={styles.infoValue}>{place.rating ? `★ ${place.rating}` : 'Not rated'}</Text>
+              <Text style={styles.infoValue}>{isSaved && place.rating ? `★ ${place.rating}` : 'Not rated'}</Text>
             </View>
             <View style={styles.infoBlock}>
               <Text style={styles.infoLabel}>Price</Text>
-              <Text style={styles.infoValue}>{'€'.repeat(place.price || 1)}</Text>
+              <Text style={styles.infoValue}>{isSaved ? '€'.repeat(place.price || 1) : 'Not set'}</Text>
             </View>
           </View>
 
-          {!!place.note && (
+          {isSaved && !!place.note && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Your note</Text>
               <Text style={styles.body}>{place.note}</Text>
             </View>
           )}
 
-          {!!place.tags?.length && (
+          {isSaved && !!place.tags?.length && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Tags</Text>
               <View style={styles.tags}>
@@ -73,7 +75,7 @@ export default function PlaceDetailsScreen({ route, navigation }) {
             </View>
           )}
 
-          {!!place.lists?.length && (
+          {isSaved && !!place.lists?.length && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Lists</Text>
               <Text style={styles.body}>{place.lists.join(' · ')}</Text>
@@ -81,8 +83,8 @@ export default function PlaceDetailsScreen({ route, navigation }) {
           )}
 
           <TouchableOpacity style={styles.primaryButton} onPress={() => setSaveVisible(true)}>
-            <Ionicons name="bookmark-outline" size={20} color={colors.background} />
-            <Text style={styles.primaryButtonText}>Edit saved place</Text>
+            <Ionicons name={isSaved ? 'bookmark' : 'bookmark-outline'} size={20} color={colors.background} />
+            <Text style={styles.primaryButtonText}>{isSaved ? 'Edit saved place' : 'Save place'}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
