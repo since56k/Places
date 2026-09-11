@@ -6,6 +6,7 @@ const placeSchema = new mongoose.Schema(
     type: { type: String, required: true, trim: true },
     city: { type: String, required: true, trim: true },
     country: { type: String, required: true, trim: true },
+    caption: { type: String, trim: true, default: '' },
     description: { type: String, trim: true, default: '' },
     imageUrl: { type: String, trim: true, default: '' },
     location: {
