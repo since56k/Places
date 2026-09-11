@@ -47,7 +47,7 @@ Places/
 ├── mobile/       React Native + Expo
 ├── backend/      Node.js + Express + MongoDB
 ├── admin/        Reserved for future React web admin
-├── docs/         Product and architecture documentation
+├── docs/         Product and deployment documentation
 └── README.md
 ```
 
@@ -70,7 +70,7 @@ cp .env.example .env
 npm start
 ```
 
-Set `EXPO_PUBLIC_API_URL` in `mobile/.env` to the public backend URL, for example your Railway service URL.
+Set `EXPO_PUBLIC_API_URL` in `mobile/.env` to the backend URL. For testing on a physical iPhone, use the public Railway URL rather than localhost.
 
 If `EXPO_PUBLIC_API_URL` is not configured, the app remains usable in local demo mode with in-memory data. This is intentional so UI development is not blocked by backend setup.
 
@@ -142,10 +142,14 @@ V0.1:
 - Database: MongoDB
 - Admin: not deployed yet
 
+The backend now includes `backend/railway.toml` with the Nixpacks build, `npm start`, `/health` healthcheck and restart policy required for the Railway service.
+
+Full setup and verification instructions are in [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+
 Later releases can move to development builds/TestFlight and add the public social layer.
 
 ## Status
 
-V0.1 currently includes the mobile navigation shell, image-first Feed, Place Details, Add Place flow, My Places library, Visited/Want to go, rating, price, notes, tags, custom lists and backend persistence APIs.
+V0.1 currently includes the mobile navigation shell, image-first Feed, Place Details, Add Place flow, My Places library, Visited/Want to go, rating, price, notes, tags, custom lists, backend persistence APIs and version-controlled Railway deployment configuration.
 
-The next infrastructure step is deploying the backend and MongoDB, then setting `EXPO_PUBLIC_API_URL` so the iPhone build uses persistent data instead of local demo mode.
+The next operational step is creating a dedicated Places Railway service, connecting MongoDB and setting its public URL in `EXPO_PUBLIC_API_URL`.
