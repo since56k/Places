@@ -8,7 +8,7 @@ The first release is intentionally designed for single-user testing. The goal is
 
 Places separates discovery from personal organization:
 
-- **Feed**: visual discovery feed inspired by image-first social apps, using a masonry-style two-column layout.
+- **Feed**: visual discovery feed inspired by image-first social apps, using a two-column layout.
 - **Explore**: search and filter places.
 - **Add**: add and publish a place.
 - **My Places**: personal square-card library of saved places.
@@ -20,7 +20,7 @@ Places separates discovery from personal organization:
 - Image-first cards
 - Place name and short caption
 - Save action
-- Open place details
+- Open Place Details
 
 ### My Places
 - Square 1:1 cards
@@ -51,7 +51,7 @@ Places/
 └── README.md
 ```
 
-The mobile app communicates with the backend through a JSON REST API. The backend is designed to run on Railway. During V0.1 the app uses a single pre-approved test user.
+The mobile app communicates with the backend through a JSON REST API. The backend is designed to run on Railway. During V0.1 the app uses a single `test-user` identity while keeping personal state separate from shared Place data.
 
 ## Development
 
@@ -70,7 +70,9 @@ cp .env.example .env
 npm start
 ```
 
-Set `EXPO_PUBLIC_API_URL` in `mobile/.env` to the backend URL.
+Set `EXPO_PUBLIC_API_URL` in `mobile/.env` to the public backend URL, for example your Railway service URL.
+
+If `EXPO_PUBLIC_API_URL` is not configured, the app remains usable in local demo mode with in-memory data. This is intentional so UI development is not blocked by backend setup.
 
 ### Backend
 
@@ -81,13 +83,56 @@ cp .env.example .env
 npm run dev
 ```
 
-Set `MONGO_URI` and other required values in `backend/.env`.
+Set `MONGO_URI` in `backend/.env`.
+
+Available V0.1 endpoints:
+
+```text
+GET    /health
+GET    /api/places
+POST   /api/places
+GET    /api/places/:id
+PATCH  /api/places/:id
+DELETE /api/places/:id
+
+GET    /api/lists
+POST   /api/lists
+DELETE /api/lists/:id
+
+GET    /api/saved-places
+PUT    /api/saved-places/:placeId
+DELETE /api/saved-places/:placeId
+```
 
 ## Data model
 
-A `Place` stores shared place information such as name, type, city, country, image and description.
+A `Place` stores shared information such as name, type, city, country, image, caption and description.
 
-A `SavedPlace` stores the user's relationship with that place: status, rating, price, note, tags and lists. Keeping these separate prepares the product for multiple users later without redesigning the place model.
+A `SavedPlace` stores the user's relationship with that place: status, rating, price, note, tags and lists. This separation allows multiple users to save the same shared Place differently later.
+
+A `List` stores user-created collections. The same place can belong to multiple lists.
+
+## Persistence flow
+
+When the API is configured:
+
+```text
+Expo app
+   │
+   ├── Add Place ───────► POST /api/places
+   │                           │
+   │                           ▼
+   │                    MongoDB Place
+   │
+   └── Personal state ──► PUT /api/saved-places/:placeId
+                               │
+                               ├── status
+                               ├── rating / price
+                               ├── note / tags
+                               └── custom lists
+```
+
+`My Places` is built from saved-place records, while the Feed can also contain shared places that have not yet been saved personally.
 
 ## Deployment strategy
 
@@ -101,4 +146,6 @@ Later releases can move to development builds/TestFlight and add the public soci
 
 ## Status
 
-Early V0.1 scaffold. The priority is a usable personal test build, not production completeness.
+V0.1 currently includes the mobile navigation shell, image-first Feed, Place Details, Add Place flow, My Places library, Visited/Want to go, rating, price, notes, tags, custom lists and backend persistence APIs.
+
+The next infrastructure step is deploying the backend and MongoDB, then setting `EXPO_PUBLIC_API_URL` so the iPhone build uses persistent data instead of local demo mode.
