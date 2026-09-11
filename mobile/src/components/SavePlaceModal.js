@@ -13,6 +13,8 @@ export default function SavePlaceModal({ visible, place, onClose }) {
   const [tagsText, setTagsText] = useState('');
   const [selectedLists, setSelectedLists] = useState([]);
   const [newListName, setNewListName] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (!place) return;
@@ -22,6 +24,7 @@ export default function SavePlaceModal({ visible, place, onClose }) {
     setNote(place.note || '');
     setTagsText((place.tags || []).join(', '));
     setSelectedLists(place.lists || []);
+    setError('');
   }, [place]);
 
   if (!place) return null;
@@ -32,26 +35,43 @@ export default function SavePlaceModal({ visible, place, onClose }) {
       : [...current, name]);
   };
 
-  const handleCreateList = () => {
+  const handleCreateList = async () => {
     const cleanName = newListName.trim();
     if (!cleanName) return;
-    createList(cleanName);
-    if (!selectedLists.includes(cleanName)) {
-      setSelectedLists((current) => [...current, cleanName]);
+
+    try {
+      setError('');
+      const createdName = await createList(cleanName);
+      if (createdName && !selectedLists.includes(createdName)) {
+        setSelectedLists((current) => [...current, createdName]);
+      }
+      setNewListName('');
+    } catch (createError) {
+      setError(createError.message || 'Unable to create list.');
     }
-    setNewListName('');
   };
 
-  const handleSave = () => {
-    savePlace(place.id, {
-      status,
-      rating,
-      price,
-      note,
-      tags: tagsText.split(',').map((tag) => tag.trim()).filter(Boolean),
-      lists: selectedLists,
-    });
-    onClose();
+  const handleSave = async () => {
+    if (saving) return;
+
+    setSaving(true);
+    setError('');
+
+    try {
+      await savePlace(place.id, {
+        status,
+        rating,
+        price,
+        note,
+        tags: tagsText.split(',').map((tag) => tag.trim()).filter(Boolean),
+        lists: selectedLists,
+      });
+      onClose();
+    } catch (saveError) {
+      setError(saveError.message || 'Unable to save this place.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -60,7 +80,7 @@ export default function SavePlaceModal({ visible, place, onClose }) {
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose}><Ionicons name="close" size={28} color={colors.text} /></TouchableOpacity>
           <Text style={styles.title}>Save place</Text>
-          <TouchableOpacity onPress={handleSave}><Text style={styles.saveText}>Save</Text></TouchableOpacity>
+          <TouchableOpacity disabled={saving} onPress={handleSave}><Text style={[styles.saveText, saving && styles.disabledText]}>{saving ? 'Saving...' : 'Save'}</Text></TouchableOpacity>
         </View>
 
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -129,6 +149,8 @@ export default function SavePlaceModal({ visible, place, onClose }) {
             <TextInput value={newListName} onChangeText={setNewListName} placeholder="New list name" placeholderTextColor={colors.muted} style={[styles.input, styles.newListInput]} />
             <TouchableOpacity onPress={handleCreateList} style={styles.addListButton}><Ionicons name="add" size={22} color={colors.background} /></TouchableOpacity>
           </View>
+
+          {!!error && <Text style={styles.error}>{error}</Text>}
         </ScrollView>
       </View>
     </Modal>
@@ -140,6 +162,7 @@ const styles = StyleSheet.create({
   header: { height: 60, paddingHorizontal: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { fontSize: 17, fontWeight: '700', color: colors.text },
   saveText: { fontSize: 16, fontWeight: '700', color: colors.text },
+  disabledText: { opacity: 0.45 },
   content: { padding: spacing.lg, paddingBottom: 48 },
   placeName: { fontSize: 24, fontWeight: '800', color: colors.text },
   placeMeta: { marginTop: 4, color: colors.muted, fontSize: 14 },
@@ -163,4 +186,5 @@ const styles = StyleSheet.create({
   newListRow: { marginTop: spacing.md, flexDirection: 'row', gap: 8 },
   newListInput: { flex: 1 },
   addListButton: { width: 48, height: 48, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.text },
+  error: { marginTop: spacing.md, color: '#B42318', fontSize: 13 },
 });
