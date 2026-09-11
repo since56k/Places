@@ -9,27 +9,37 @@ const cardGap = 12;
 const cardWidth = (Dimensions.get('window').width - 32 - cardGap) / 2;
 
 export default function MyPlacesScreen({ navigation }) {
-  const { places, lists } = usePlaces();
+  const { places, lists, loading, syncError, isPersistent, refresh } = usePlaces();
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('all');
 
-  const visiblePlaces = useMemo(() => places.filter((place) => {
+  const savedPlaces = useMemo(() => places.filter((place) => place.isSaved !== false), [places]);
+
+  const visiblePlaces = useMemo(() => savedPlaces.filter((place) => {
     const matchesStatus = status === 'all' || place.status === status;
     const text = `${place.name} ${place.city} ${place.country} ${(place.tags || []).join(' ')} ${place.note || ''}`.toLowerCase();
     return matchesStatus && text.includes(query.toLowerCase());
-  }), [places, query, status]);
+  }), [savedPlaces, query, status]);
 
   const listCounts = useMemo(() => Object.fromEntries(
-    lists.map((list) => [list, places.filter((place) => (place.lists || []).includes(list)).length])
-  ), [lists, places]);
+    lists.map((list) => [list, savedPlaces.filter((place) => (place.lists || []).includes(list)).length])
+  ), [lists, savedPlaces]);
 
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <View style={styles.headingRow}>
-          <Text style={styles.title}>My Places</Text>
-          <Ionicons name="options-outline" size={24} color={colors.text} />
+          <View>
+            <Text style={styles.title}>My Places</Text>
+            <Text style={styles.syncLabel}>{isPersistent ? 'Synced library' : 'Local demo mode'}</Text>
+          </View>
+          <TouchableOpacity onPress={refresh} disabled={!isPersistent || loading}>
+            <Ionicons name={loading ? 'cloud-upload-outline' : 'refresh-outline'} size={24} color={isPersistent ? colors.text : colors.muted} />
+          </TouchableOpacity>
         </View>
+
+        {!!syncError && <Text style={styles.syncError}>{syncError}</Text>}
+
         <TextInput value={query} onChangeText={setQuery} placeholder="Search my places..." placeholderTextColor={colors.muted} style={styles.search} />
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
@@ -78,6 +88,8 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 16, paddingTop: spacing.sm, paddingBottom: spacing.xl },
   headingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { fontSize: 30, fontWeight: '800', letterSpacing: -1, color: colors.text },
+  syncLabel: { marginTop: 2, fontSize: 12, color: colors.muted },
+  syncError: { marginTop: spacing.sm, padding: spacing.sm, borderRadius: radius.sm, backgroundColor: '#FDECEC', color: '#B42318', fontSize: 12 },
   search: { marginTop: spacing.md, backgroundColor: colors.surface, borderRadius: radius.md, paddingHorizontal: spacing.md, height: 48, fontSize: 15, color: colors.text },
   filters: { gap: spacing.sm, paddingVertical: spacing.md },
   chip: { borderWidth: 1, borderColor: colors.border, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 13 },
