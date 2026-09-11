@@ -1,22 +1,27 @@
 import React, { useMemo, useState } from 'react';
 import { Dimensions, Image, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { demoLists, demoPlaces } from '../data/demoPlaces';
+import { usePlaces } from '../context/PlacesContext';
 import { colors, radius, spacing } from '../theme';
 
 const filters = ['Type', 'Country', 'City', 'Price', 'Rating', 'Tags'];
 const cardGap = 12;
 const cardWidth = (Dimensions.get('window').width - 32 - cardGap) / 2;
 
-export default function MyPlacesScreen() {
+export default function MyPlacesScreen({ navigation }) {
+  const { places, lists } = usePlaces();
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('all');
 
-  const visiblePlaces = useMemo(() => demoPlaces.filter((place) => {
+  const visiblePlaces = useMemo(() => places.filter((place) => {
     const matchesStatus = status === 'all' || place.status === status;
-    const text = `${place.name} ${place.city} ${place.country} ${place.tags.join(' ')}`.toLowerCase();
+    const text = `${place.name} ${place.city} ${place.country} ${(place.tags || []).join(' ')} ${place.note || ''}`.toLowerCase();
     return matchesStatus && text.includes(query.toLowerCase());
-  }), [query, status]);
+  }), [places, query, status]);
+
+  const listCounts = useMemo(() => Object.fromEntries(
+    lists.map((list) => [list, places.filter((place) => (place.lists || []).includes(list)).length])
+  ), [lists, places]);
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -41,17 +46,25 @@ export default function MyPlacesScreen() {
 
         <View style={styles.sectionHeader}><Text style={styles.sectionTitle}>My Lists</Text><Text style={styles.link}>See all</Text></View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.listRow}>
-          {demoLists.map((list) => <TouchableOpacity key={list} style={styles.listCard}><Text style={styles.listName}>{list}</Text><Text style={styles.listCount}>Saved list</Text></TouchableOpacity>)}
-          <TouchableOpacity style={[styles.listCard, styles.newList]}><Ionicons name="add" size={24} color={colors.text} /><Text style={styles.listName}>New list</Text></TouchableOpacity>
+          {lists.map((list) => (
+            <TouchableOpacity key={list} style={styles.listCard}>
+              <Text style={styles.listName}>{list}</Text>
+              <Text style={styles.listCount}>{listCounts[list]} {listCounts[list] === 1 ? 'place' : 'places'}</Text>
+            </TouchableOpacity>
+          ))}
+          <TouchableOpacity style={[styles.listCard, styles.newList]}>
+            <Ionicons name="add" size={24} color={colors.text} />
+            <Text style={styles.listName}>New list</Text>
+          </TouchableOpacity>
         </ScrollView>
 
         <View style={styles.sectionHeader}><Text style={styles.sectionTitle}>Saved</Text><Text style={styles.count}>{visiblePlaces.length} places</Text></View>
         <View style={styles.grid}>
           {visiblePlaces.map((place) => (
-            <TouchableOpacity key={place.id} style={styles.placeCard} activeOpacity={0.88}>
+            <TouchableOpacity key={place.id} style={styles.placeCard} activeOpacity={0.88} onPress={() => navigation.navigate('PlaceDetails', { placeId: place.id })}>
               <Image source={{ uri: place.imageUrl }} style={styles.placeImage} />
               <Text style={styles.placeName} numberOfLines={1}>{place.name}</Text>
-              <Text style={styles.placeMeta}>{place.city} · {'€'.repeat(place.price)} · ★ {place.rating}</Text>
+              <Text style={styles.placeMeta}>{place.city} · {'€'.repeat(place.price || 1)} · {place.rating ? `★ ${place.rating}` : 'Not rated'}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -75,7 +88,7 @@ const styles = StyleSheet.create({
   segmentText: { color: colors.muted, fontSize: 13, fontWeight: '600' },
   segmentTextActive: { color: colors.text },
   sectionHeader: { marginTop: spacing.sm, marginBottom: spacing.md, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  sectionTitle: { fontSize: 20, fontWeight: '750', color: colors.text },
+  sectionTitle: { fontSize: 20, fontWeight: '700', color: colors.text },
   link: { fontSize: 13, color: colors.muted },
   count: { fontSize: 13, color: colors.muted },
   listRow: { gap: spacing.sm, paddingBottom: spacing.lg },
