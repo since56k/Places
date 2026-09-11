@@ -1,28 +1,34 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Dimensions, FlatList, Image, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { demoPlaces } from '../data/demoPlaces';
+import SavePlaceModal from '../components/SavePlaceModal';
+import { usePlaces } from '../context/PlacesContext';
 import { colors, radius, spacing } from '../theme';
 
 const gap = 12;
 const horizontalPadding = 16;
 const cardWidth = (Dimensions.get('window').width - horizontalPadding * 2 - gap) / 2;
 
-function FeedCard({ item }) {
+function FeedCard({ item, onOpen, onSave }) {
   return (
-    <TouchableOpacity activeOpacity={0.88} style={styles.card}>
+    <TouchableOpacity activeOpacity={0.88} style={styles.card} onPress={onOpen}>
       <Image source={{ uri: item.imageUrl }} style={[styles.image, { height: item.id === '2' || item.id === '3' ? 230 : 190 }]} />
       <Text style={styles.cardTitle} numberOfLines={2}>{item.name}</Text>
       <Text style={styles.caption} numberOfLines={2}>{item.caption}</Text>
       <View style={styles.metaRow}>
         <Text style={styles.location} numberOfLines={1}>{item.city}</Text>
-        <Ionicons name="bookmark-outline" size={18} color={colors.text} />
+        <TouchableOpacity onPress={onSave} hitSlop={10}>
+          <Ionicons name="bookmark-outline" size={18} color={colors.text} />
+        </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
 }
 
-export default function FeedScreen() {
+export default function FeedScreen({ navigation }) {
+  const { places } = usePlaces();
+  const [selectedPlace, setSelectedPlace] = useState(null);
+
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.header}>
@@ -33,14 +39,21 @@ export default function FeedScreen() {
         <Ionicons name="search-outline" size={24} color={colors.text} />
       </View>
       <FlatList
-        data={demoPlaces}
+        data={places}
         keyExtractor={(item) => item.id}
         numColumns={2}
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.grid}
         showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => <FeedCard item={item} />}
+        renderItem={({ item }) => (
+          <FeedCard
+            item={item}
+            onOpen={() => navigation.navigate('PlaceDetails', { placeId: item.id })}
+            onSave={() => setSelectedPlace(item)}
+          />
+        )}
       />
+      <SavePlaceModal visible={!!selectedPlace} place={selectedPlace} onClose={() => setSelectedPlace(null)} />
     </SafeAreaView>
   );
 }
