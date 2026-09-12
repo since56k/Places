@@ -2,10 +2,20 @@
   "expo": {
     "name": "Places",
     "slug": "places",
+    "scheme": "places",
     "version": "0.1.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "automatic",
-    "ios": { "supportsTablet": true },
-    "android": { "adaptiveIcon": {} }
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#F7F6F2",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.since56k.places"
+    },
+    "android": {
+      "package": "com.since56k.places",
+      "adaptiveIcon": {
+        "backgroundColor": "#F7F6F2"
+      }
+    }
   }
 }
