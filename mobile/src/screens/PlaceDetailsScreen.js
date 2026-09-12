@@ -3,7 +3,7 @@ import { Image, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, Vi
 import { Ionicons } from '@expo/vector-icons';
 import SavePlaceModal from '../components/SavePlaceModal';
 import { usePlaces } from '../context/PlacesContext';
-import { colors, radius, spacing } from '../theme';
+import { colors, radius, spacing, typography } from '../theme';
 
 export default function PlaceDetailsScreen({ route, navigation }) {
   const { placeId } = route.params;
@@ -30,11 +30,12 @@ export default function PlaceDetailsScreen({ route, navigation }) {
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.imageWrap}>
           <Image source={{ uri: place.imageUrl }} style={styles.hero} />
+          <View style={styles.heroShade} />
           <TouchableOpacity style={[styles.floatingButton, styles.backButton]} onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back" size={24} color={colors.text} />
+            <Ionicons name="chevron-back" size={22} color={colors.text} />
           </TouchableOpacity>
           <TouchableOpacity style={[styles.floatingButton, styles.saveButton]} onPress={() => setSaveVisible(true)}>
-            <Ionicons name={isSaved ? 'bookmark' : 'bookmark-outline'} size={22} color={colors.text} />
+            <Ionicons name={isSaved ? 'bookmark' : 'bookmark-outline'} size={20} color={colors.accent} />
           </TouchableOpacity>
         </View>
 
@@ -44,25 +45,18 @@ export default function PlaceDetailsScreen({ route, navigation }) {
           <Text style={styles.location}>{place.city}, {place.country}</Text>
           {!!place.caption && <Text style={styles.caption}>{place.caption}</Text>}
 
+          <View style={styles.divider} />
+
           <View style={styles.infoRow}>
-            <View style={styles.infoBlock}>
-              <Text style={styles.infoLabel}>Status</Text>
-              <Text style={styles.infoValue}>{isSaved ? (place.status === 'visited' ? 'Visited' : 'Want to go') : 'Not saved'}</Text>
-            </View>
-            <View style={styles.infoBlock}>
-              <Text style={styles.infoLabel}>Rating</Text>
-              <Text style={styles.infoValue}>{isSaved && place.rating ? `★ ${place.rating}` : 'Not rated'}</Text>
-            </View>
-            <View style={styles.infoBlock}>
-              <Text style={styles.infoLabel}>Price</Text>
-              <Text style={styles.infoValue}>{isSaved ? '€'.repeat(place.price || 1) : 'Not set'}</Text>
-            </View>
+            <InfoBlock label="Status" value={isSaved ? (place.status === 'visited' ? 'Visited' : 'Want to go') : 'Not saved'} />
+            <InfoBlock label="Rating" value={isSaved && place.rating ? `★ ${place.rating}` : 'Not rated'} />
+            <InfoBlock label="Price" value={isSaved ? '€'.repeat(place.price || 1) : 'Not set'} />
           </View>
 
           {isSaved && !!place.note && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Your note</Text>
-              <Text style={styles.body}>{place.note}</Text>
+              <Text style={styles.sectionEyebrow}>Your note</Text>
+              <Text style={styles.noteText}>“{place.note}”</Text>
             </View>
           )}
 
@@ -83,7 +77,7 @@ export default function PlaceDetailsScreen({ route, navigation }) {
           )}
 
           <TouchableOpacity style={styles.primaryButton} onPress={() => setSaveVisible(true)}>
-            <Ionicons name={isSaved ? 'bookmark' : 'bookmark-outline'} size={20} color={colors.background} />
+            <Ionicons name={isSaved ? 'bookmark' : 'bookmark-outline'} size={19} color={colors.surface} />
             <Text style={styles.primaryButtonText}>{isSaved ? 'Edit saved place' : 'Save place'}</Text>
           </TouchableOpacity>
         </View>
@@ -94,30 +88,43 @@ export default function PlaceDetailsScreen({ route, navigation }) {
   );
 }
 
+function InfoBlock({ label, value }) {
+  return (
+    <View style={styles.infoBlock}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoValue}>{value}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  imageWrap: { position: 'relative' },
-  hero: { width: '100%', height: 390, backgroundColor: colors.surface },
+  imageWrap: { position: 'relative', marginHorizontal: spacing.md, marginTop: spacing.sm, borderRadius: radius.xl, overflow: 'hidden' },
+  hero: { width: '100%', height: 390, backgroundColor: colors.surfaceSoft },
+  heroShade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(23,23,23,0.06)' },
   floatingButton: { position: 'absolute', top: spacing.md, width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.94)', alignItems: 'center', justifyContent: 'center' },
   backButton: { left: spacing.md },
   saveButton: { right: spacing.md },
-  content: { padding: spacing.lg, paddingBottom: 50 },
-  eyebrow: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.2, color: colors.muted },
-  title: { marginTop: 6, fontSize: 30, lineHeight: 36, fontWeight: '800', letterSpacing: -0.8, color: colors.text },
-  location: { marginTop: 6, fontSize: 15, color: colors.muted },
-  caption: { marginTop: spacing.lg, fontSize: 17, lineHeight: 25, color: colors.text },
-  infoRow: { marginTop: spacing.lg, flexDirection: 'row', gap: 8 },
-  infoBlock: { flex: 1, padding: spacing.md, backgroundColor: colors.surface, borderRadius: radius.md },
-  infoLabel: { fontSize: 11, color: colors.muted, marginBottom: 6 },
-  infoValue: { fontSize: 14, fontWeight: '700', color: colors.text },
-  section: { marginTop: spacing.lg },
-  sectionTitle: { marginBottom: spacing.sm, fontSize: 16, fontWeight: '700', color: colors.text },
-  body: { fontSize: 15, lineHeight: 23, color: colors.text },
+  content: { paddingHorizontal: spacing.md, paddingTop: spacing.lg, paddingBottom: 60 },
+  eyebrow: { fontFamily: typography.fontFamily.medium, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.9, color: colors.accent },
+  title: { marginTop: 5, fontFamily: typography.fontFamily.display, fontSize: 38, lineHeight: 43, color: colors.text },
+  location: { marginTop: 6, fontFamily: typography.fontFamily.body, fontSize: 14, color: colors.textSecondary },
+  caption: { marginTop: spacing.lg, fontFamily: typography.fontFamily.body, fontSize: 17, lineHeight: 26, color: colors.text },
+  divider: { marginTop: spacing.xl, height: 1, backgroundColor: colors.border },
+  infoRow: { marginTop: spacing.md, flexDirection: 'row', gap: 8 },
+  infoBlock: { flex: 1, minHeight: 82, padding: 12, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, justifyContent: 'flex-end' },
+  infoLabel: { fontFamily: typography.fontFamily.medium, fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.6, color: colors.textSecondary, marginBottom: 6 },
+  infoValue: { fontFamily: typography.fontFamily.semibold, fontSize: 13, color: colors.text },
+  section: { marginTop: spacing.xl },
+  sectionEyebrow: { fontFamily: typography.fontFamily.medium, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.8, color: colors.accent },
+  sectionTitle: { marginBottom: spacing.sm, fontFamily: typography.fontFamily.display, fontSize: 24, color: colors.text },
+  noteText: { marginTop: 8, fontFamily: typography.fontFamily.display, fontSize: 23, lineHeight: 32, color: colors.text },
+  body: { fontFamily: typography.fontFamily.body, fontSize: 14, lineHeight: 22, color: colors.textSecondary },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  tag: { paddingVertical: 8, paddingHorizontal: 12, backgroundColor: colors.surface, borderRadius: 18 },
-  tagText: { fontSize: 13, color: colors.text },
-  primaryButton: { marginTop: spacing.xl, height: 52, borderRadius: radius.md, backgroundColor: colors.text, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' },
-  primaryButtonText: { color: colors.background, fontSize: 15, fontWeight: '700' },
+  tag: { paddingVertical: 8, paddingHorizontal: 12, backgroundColor: colors.accentSoft, borderRadius: radius.pill },
+  tagText: { fontFamily: typography.fontFamily.medium, fontSize: 12, color: colors.accentDark },
+  primaryButton: { marginTop: spacing.xl, height: 56, borderRadius: radius.pill, backgroundColor: colors.accent, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' },
+  primaryButtonText: { color: colors.surface, fontFamily: typography.fontFamily.semibold, fontSize: 14 },
   missing: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
-  backLink: { marginTop: spacing.md, color: colors.muted },
+  backLink: { marginTop: spacing.md, fontFamily: typography.fontFamily.medium, color: colors.accent },
 });
