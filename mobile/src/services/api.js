@@ -83,6 +83,13 @@ export function createList(name) {
   });
 }
 
+export function renameList(currentName, nextName) {
+  return request(`/api/lists/by-name/${encodeURIComponent(currentName)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ name: nextName, userKey: USER_KEY }),
+  });
+}
+
 export function deleteList(name) {
   return request(`/api/lists/by-name/${encodeURIComponent(name)}?userKey=${encodeURIComponent(USER_KEY)}`, {
     method: 'DELETE',
