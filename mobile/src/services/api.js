@@ -53,6 +53,12 @@ export function savePersonalPlace(placeId, input) {
   });
 }
 
+export function deleteSavedPlace(placeId) {
+  return request(`/api/saved-places/${placeId}?userKey=${encodeURIComponent(USER_KEY)}`, {
+    method: 'DELETE',
+  });
+}
+
 export function getLists() {
   return request(`/api/lists?userKey=${encodeURIComponent(USER_KEY)}`);
 }
@@ -61,5 +67,11 @@ export function createList(name) {
   return request('/api/lists', {
     method: 'POST',
     body: JSON.stringify({ name, userKey: USER_KEY }),
+  });
+}
+
+export function deleteList(name) {
+  return request(`/api/lists/by-name/${encodeURIComponent(name)}?userKey=${encodeURIComponent(USER_KEY)}`, {
+    method: 'DELETE',
   });
 }
