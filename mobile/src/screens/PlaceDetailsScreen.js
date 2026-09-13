@@ -1,5 +1,16 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, Image, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  Image,
+  Linking,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import SavePlaceModal from '../components/SavePlaceModal';
 import { usePlaces } from '../context/PlacesContext';
@@ -7,7 +18,7 @@ import { colors, radius, spacing, typography } from '../theme';
 
 export default function PlaceDetailsScreen({ route, navigation }) {
   const { placeId } = route.params;
-  const { places, removeSavedPlace } = usePlaces();
+  const { places, removeSavedPlace, deletePlace } = usePlaces();
   const [saveVisible, setSaveVisible] = useState(false);
 
   const place = useMemo(() => places.find((item) => item.id === placeId), [places, placeId]);
@@ -28,12 +39,66 @@ export default function PlaceDetailsScreen({ route, navigation }) {
   const confirmRemove = () => {
     Alert.alert(
       'Remove saved place?',
-      `${place.name} will be removed from My Places.`,
+      `${place.name} will be removed from My Places, but the place itself will remain available.`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Remove', style: 'destructive', onPress: () => removeSavedPlace(place.id) },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await removeSavedPlace(place.id);
+            } catch (error) {
+              Alert.alert('Unable to remove place', error.message || 'Please try again.');
+            }
+          },
+        },
       ]
     );
+  };
+
+  const confirmDelete = () => {
+    Alert.alert(
+      'Delete place permanently?',
+      `${place.name} will be deleted from Places and removed from all saved collections. This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deletePlace(place.id);
+              navigation.goBack();
+            } catch (error) {
+              Alert.alert('Unable to delete place', error.message || 'Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const openInMaps = async () => {
+    const query = [place.address, place.city, place.country].filter(Boolean).join(', ');
+    if (!query) return;
+
+    const encoded = encodeURIComponent(query);
+    const nativeUrl = Platform.OS === 'ios'
+      ? `maps://?q=${encoded}`
+      : `geo:0,0?q=${encoded}`;
+    const fallbackUrl = `https://www.google.com/maps/search/?api=1&query=${encoded}`;
+
+    try {
+      const canOpenNative = await Linking.canOpenURL(nativeUrl);
+      await Linking.openURL(canOpenNative ? nativeUrl : fallbackUrl);
+    } catch (_error) {
+      try {
+        await Linking.openURL(fallbackUrl);
+      } catch (_fallbackError) {
+        Alert.alert('Unable to open Maps', 'No map application is available on this device.');
+      }
+    }
   };
 
   return (
@@ -61,6 +126,17 @@ export default function PlaceDetailsScreen({ route, navigation }) {
             </View>
           )}
           {!!place.caption && <Text style={styles.caption}>{place.caption}</Text>}
+
+          <View style={styles.quickActions}>
+            <TouchableOpacity style={styles.quickAction} onPress={() => navigation.navigate('EditPlace', { placeId: place.id })}>
+              <Ionicons name="pencil-outline" size={18} color={colors.accent} />
+              <Text style={styles.quickActionText}>Edit place</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.quickAction} onPress={openInMaps}>
+              <Ionicons name="navigate-outline" size={18} color={colors.accent} />
+              <Text style={styles.quickActionText}>Open in Maps</Text>
+            </TouchableOpacity>
+          </View>
 
           <View style={styles.divider} />
 
@@ -100,10 +176,15 @@ export default function PlaceDetailsScreen({ route, navigation }) {
 
           {isSaved && (
             <TouchableOpacity style={styles.removeButton} onPress={confirmRemove}>
-              <Ionicons name="trash-outline" size={17} color={colors.error} />
+              <Ionicons name="bookmark-remove-outline" size={17} color={colors.error} />
               <Text style={styles.removeButtonText}>Remove from My Places</Text>
             </TouchableOpacity>
           )}
+
+          <TouchableOpacity style={styles.deleteButton} onPress={confirmDelete}>
+            <Ionicons name="trash-outline" size={17} color={colors.error} />
+            <Text style={styles.deleteButtonText}>Delete place permanently</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
@@ -136,6 +217,9 @@ const styles = StyleSheet.create({
   addressRow: { marginTop: 7, flexDirection: 'row', alignItems: 'center', gap: 5 },
   address: { flex: 1, fontFamily: typography.fontFamily.body, fontSize: 12, lineHeight: 18, color: colors.textSecondary },
   caption: { marginTop: spacing.lg, fontFamily: typography.fontFamily.body, fontSize: 17, lineHeight: 26, color: colors.text },
+  quickActions: { marginTop: spacing.lg, flexDirection: 'row', gap: 8 },
+  quickAction: { flex: 1, height: 48, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
+  quickActionText: { fontFamily: typography.fontFamily.medium, fontSize: 12, color: colors.accentDark },
   divider: { marginTop: spacing.xl, height: 1, backgroundColor: colors.border },
   infoRow: { marginTop: spacing.md, flexDirection: 'row', gap: 8 },
   infoBlock: { flex: 1, minHeight: 82, padding: 12, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, justifyContent: 'flex-end' },
@@ -153,6 +237,8 @@ const styles = StyleSheet.create({
   primaryButtonText: { color: colors.surface, fontFamily: typography.fontFamily.semibold, fontSize: 14 },
   removeButton: { marginTop: 12, height: 50, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, flexDirection: 'row', gap: 7, alignItems: 'center', justifyContent: 'center' },
   removeButtonText: { fontFamily: typography.fontFamily.medium, fontSize: 13, color: colors.error },
+  deleteButton: { marginTop: 12, height: 50, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.error, flexDirection: 'row', gap: 7, alignItems: 'center', justifyContent: 'center' },
+  deleteButtonText: { fontFamily: typography.fontFamily.semibold, fontSize: 13, color: colors.error },
   missing: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
   backLink: { marginTop: spacing.md, fontFamily: typography.fontFamily.medium, color: colors.accent },
 });
