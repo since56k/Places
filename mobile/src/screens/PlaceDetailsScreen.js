@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Image, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import SavePlaceModal from '../components/SavePlaceModal';
 import { usePlaces } from '../context/PlacesContext';
@@ -7,7 +7,7 @@ import { colors, radius, spacing, typography } from '../theme';
 
 export default function PlaceDetailsScreen({ route, navigation }) {
   const { placeId } = route.params;
-  const { places } = usePlaces();
+  const { places, removeSavedPlace } = usePlaces();
   const [saveVisible, setSaveVisible] = useState(false);
 
   const place = useMemo(() => places.find((item) => item.id === placeId), [places, placeId]);
@@ -24,6 +24,17 @@ export default function PlaceDetailsScreen({ route, navigation }) {
   }
 
   const isSaved = place.isSaved !== false;
+
+  const confirmRemove = () => {
+    Alert.alert(
+      'Remove saved place?',
+      `${place.name} will be removed from My Places.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Remove', style: 'destructive', onPress: () => removeSavedPlace(place.id) },
+      ]
+    );
+  };
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -80,6 +91,13 @@ export default function PlaceDetailsScreen({ route, navigation }) {
             <Ionicons name={isSaved ? 'bookmark' : 'bookmark-outline'} size={19} color={colors.surface} />
             <Text style={styles.primaryButtonText}>{isSaved ? 'Edit saved place' : 'Save place'}</Text>
           </TouchableOpacity>
+
+          {isSaved && (
+            <TouchableOpacity style={styles.removeButton} onPress={confirmRemove}>
+              <Ionicons name="trash-outline" size={17} color={colors.error} />
+              <Text style={styles.removeButtonText}>Remove from My Places</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
 
@@ -125,6 +143,8 @@ const styles = StyleSheet.create({
   tagText: { fontFamily: typography.fontFamily.medium, fontSize: 12, color: colors.accentDark },
   primaryButton: { marginTop: spacing.xl, height: 56, borderRadius: radius.pill, backgroundColor: colors.accent, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' },
   primaryButtonText: { color: colors.surface, fontFamily: typography.fontFamily.semibold, fontSize: 14 },
+  removeButton: { marginTop: 12, height: 50, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, flexDirection: 'row', gap: 7, alignItems: 'center', justifyContent: 'center' },
+  removeButtonText: { fontFamily: typography.fontFamily.medium, fontSize: 13, color: colors.error },
   missing: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
   backLink: { marginTop: spacing.md, fontFamily: typography.fontFamily.medium, color: colors.accent },
 });
