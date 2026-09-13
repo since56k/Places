@@ -19,6 +19,7 @@ import AddScreen from './src/screens/AddScreen';
 import MyPlacesScreen from './src/screens/MyPlacesScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import PlaceDetailsScreen from './src/screens/PlaceDetailsScreen';
+import EditPlaceScreen from './src/screens/EditPlaceScreen';
 import { PlacesProvider } from './src/context/PlacesContext';
 import { colors, typography } from './src/theme';
 
@@ -113,6 +114,7 @@ export default function App() {
         <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
           <Stack.Screen name="Main" component={MainTabs} />
           <Stack.Screen name="PlaceDetails" component={PlaceDetailsScreen} />
+          <Stack.Screen name="EditPlace" component={EditPlaceScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </PlacesProvider>
