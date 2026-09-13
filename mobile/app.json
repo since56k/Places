@@ -7,6 +7,16 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "backgroundColor": "#F7F6F2",
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Places to access your photos so you can add a photo to a place.",
+          "cameraPermission": "Allow Places to use your camera so you can photograph a place.",
+          "microphonePermission": false
+        }
+      ]
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.since56k.places"
