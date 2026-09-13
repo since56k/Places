@@ -42,6 +42,19 @@ export function createPlace(input) {
   });
 }
 
+export function updatePlace(placeId, input) {
+  return request(`/api/places/${placeId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export function deletePlace(placeId) {
+  return request(`/api/places/${placeId}`, {
+    method: 'DELETE',
+  });
+}
+
 export function getSavedPlaces() {
   return request(`/api/saved-places?userKey=${encodeURIComponent(USER_KEY)}`);
 }
