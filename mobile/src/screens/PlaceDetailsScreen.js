@@ -54,6 +54,12 @@ export default function PlaceDetailsScreen({ route, navigation }) {
           <Text style={styles.eyebrow}>{place.type}</Text>
           <Text style={styles.title}>{place.name}</Text>
           <Text style={styles.location}>{place.city}, {place.country}</Text>
+          {!!place.address && (
+            <View style={styles.addressRow}>
+              <Ionicons name="location-outline" size={14} color={colors.textSecondary} />
+              <Text style={styles.address}>{place.address}</Text>
+            </View>
+          )}
           {!!place.caption && <Text style={styles.caption}>{place.caption}</Text>}
 
           <View style={styles.divider} />
@@ -127,6 +133,8 @@ const styles = StyleSheet.create({
   eyebrow: { fontFamily: typography.fontFamily.medium, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.9, color: colors.accent },
   title: { marginTop: 5, fontFamily: typography.fontFamily.display, fontSize: 38, lineHeight: 43, color: colors.text },
   location: { marginTop: 6, fontFamily: typography.fontFamily.body, fontSize: 14, color: colors.textSecondary },
+  addressRow: { marginTop: 7, flexDirection: 'row', alignItems: 'center', gap: 5 },
+  address: { flex: 1, fontFamily: typography.fontFamily.body, fontSize: 12, lineHeight: 18, color: colors.textSecondary },
   caption: { marginTop: spacing.lg, fontFamily: typography.fontFamily.body, fontSize: 17, lineHeight: 26, color: colors.text },
   divider: { marginTop: spacing.xl, height: 1, backgroundColor: colors.border },
   infoRow: { marginTop: spacing.md, flexDirection: 'row', gap: 8 },

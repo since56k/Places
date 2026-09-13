@@ -10,7 +10,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '8mb' }));
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'places-api' });
@@ -29,6 +29,10 @@ app.use((error, _req, res, _next) => {
 
   if (error?.name === 'CastError') {
     return res.status(400).json({ message: 'Invalid resource identifier' });
+  }
+
+  if (error?.type === 'entity.too.large') {
+    return res.status(413).json({ message: 'Photo is too large. Choose a smaller image.' });
   }
 
   if (error?.code === 11000) {
