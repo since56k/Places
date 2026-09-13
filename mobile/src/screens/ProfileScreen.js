@@ -1,10 +1,10 @@
 import React, { useMemo } from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePlaces } from '../context/PlacesContext';
 import { colors, radius, spacing, typography } from '../theme';
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ navigation }) {
   const { places, lists, isPersistent } = usePlaces();
 
   const stats = useMemo(() => {
@@ -13,6 +13,10 @@ export default function ProfileScreen() {
     const wantToGo = saved.filter((place) => place.status === 'want_to_go');
     return { saved: saved.length, visited: visited.length, wantToGo: wantToGo.length };
   }, [places]);
+
+  const openLibrary = (params = {}) => {
+    navigation.navigate('My Places', { ...params, nonce: Date.now() });
+  };
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -31,20 +35,32 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.statsRow}>
-          <Stat value={stats.saved} label="Saved" />
-          <Stat value={stats.visited} label="Visited" />
-          <Stat value={stats.wantToGo} label="Want to go" />
+          <Stat value={stats.saved} label="Saved" onPress={() => openLibrary({ status: 'all' })} />
+          <Stat value={stats.visited} label="Visited" onPress={() => openLibrary({ status: 'visited' })} />
+          <Stat value={stats.wantToGo} label="Want to go" onPress={() => openLibrary({ status: 'want_to_go' })} />
         </View>
 
         <Text style={styles.sectionTitle}>Your library</Text>
         <View style={styles.infoCard}>
-          <View style={styles.infoRow}>
+          <TouchableOpacity style={styles.infoRow} onPress={() => openLibrary()}>
             <View style={styles.infoIcon}><Ionicons name="bookmark-outline" size={18} color={colors.accent} /></View>
             <View style={styles.infoCopy}>
               <Text style={styles.infoTitle}>{lists.length} lists</Text>
-              <Text style={styles.infoText}>Small collections for cities, moods and occasions.</Text>
+              <Text style={styles.infoText}>Open your lists and manage the places inside them.</Text>
             </View>
-          </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
+
+          {!!lists.length && (
+            <View style={styles.listChips}>
+              {lists.slice(0, 6).map((list) => (
+                <TouchableOpacity key={list} onPress={() => openLibrary({ listName: list, status: 'all' })} style={styles.listChip}>
+                  <Text style={styles.listChipText} numberOfLines={1}>{list}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
           <View style={styles.divider} />
           <View style={styles.infoRow}>
             <View style={styles.infoIcon}><Ionicons name="leaf-outline" size={18} color={colors.success} /></View>
@@ -59,12 +75,15 @@ export default function ProfileScreen() {
   );
 }
 
-function Stat({ value, label }) {
+function Stat({ value, label, onPress }) {
   return (
-    <View style={styles.statCard}>
+    <TouchableOpacity activeOpacity={0.82} onPress={onPress} style={styles.statCard}>
       <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
+      <View style={styles.statLabelRow}>
+        <Text style={styles.statLabel}>{label}</Text>
+        <Ionicons name="chevron-forward" size={12} color={colors.textSecondary} />
+      </View>
+    </TouchableOpacity>
   );
 }
 
@@ -81,13 +100,17 @@ const styles = StyleSheet.create({
   statsRow: { marginTop: spacing.md, flexDirection: 'row', gap: 10 },
   statCard: { flex: 1, minHeight: 96, padding: 14, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, justifyContent: 'flex-end' },
   statValue: { fontFamily: typography.fontFamily.display, fontSize: 30, color: colors.accent },
-  statLabel: { marginTop: 3, fontFamily: typography.fontFamily.medium, fontSize: 11, color: colors.textSecondary },
+  statLabelRow: { marginTop: 3, flexDirection: 'row', alignItems: 'center', gap: 2 },
+  statLabel: { flexShrink: 1, fontFamily: typography.fontFamily.medium, fontSize: 11, color: colors.textSecondary },
   sectionTitle: { marginTop: spacing.xl, marginBottom: spacing.md, fontFamily: typography.fontFamily.display, fontSize: 27, color: colors.text },
   infoCard: { paddingHorizontal: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
-  infoRow: { paddingVertical: spacing.md, flexDirection: 'row', alignItems: 'flex-start' },
+  infoRow: { paddingVertical: spacing.md, flexDirection: 'row', alignItems: 'center' },
   infoIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.surfaceSoft, alignItems: 'center', justifyContent: 'center' },
-  infoCopy: { flex: 1, marginLeft: 12 },
+  infoCopy: { flex: 1, marginLeft: 12, marginRight: 8 },
   infoTitle: { fontFamily: typography.fontFamily.semibold, fontSize: 14, color: colors.text },
   infoText: { marginTop: 4, fontFamily: typography.fontFamily.body, fontSize: 12, lineHeight: 18, color: colors.textSecondary },
+  listChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingBottom: spacing.md },
+  listChip: { maxWidth: '48%', paddingVertical: 8, paddingHorizontal: 12, borderRadius: radius.pill, backgroundColor: colors.accentSoft },
+  listChipText: { fontFamily: typography.fontFamily.medium, fontSize: 12, color: colors.accentDark },
   divider: { height: 1, backgroundColor: colors.border },
 });

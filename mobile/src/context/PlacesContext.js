@@ -58,6 +58,19 @@ function localPlaceFromInput(input) {
   };
 }
 
+function unsavedVersion(place) {
+  return {
+    ...place,
+    status: null,
+    rating: 0,
+    price: 1,
+    note: '',
+    tags: [],
+    lists: [],
+    isSaved: false,
+  };
+}
+
 export function PlacesProvider({ children }) {
   const [places, setPlaces] = useState(() => demoPlaces.map((place) => ({ ...place, isSaved: true })));
   const [lists, setLists] = useState(demoLists);
@@ -173,6 +186,23 @@ export function PlacesProvider({ children }) {
     }
   };
 
+  const removeSavedPlace = async (placeId) => {
+    setSyncError('');
+
+    if (!api.isApiConfigured) {
+      setPlaces((current) => current.map((place) => place.id === placeId ? unsavedVersion(place) : place));
+      return;
+    }
+
+    try {
+      await api.deleteSavedPlace(placeId);
+      setPlaces((current) => current.map((place) => place.id === placeId ? unsavedVersion(place) : place));
+    } catch (error) {
+      setSyncError(error.message || 'Unable to remove saved place');
+      throw error;
+    }
+  };
+
   const createList = async (name) => {
     const cleanName = name.trim();
     if (!cleanName || lists.includes(cleanName)) return cleanName;
@@ -194,6 +224,28 @@ export function PlacesProvider({ children }) {
     }
   };
 
+  const deleteList = async (name) => {
+    const cleanName = name.trim();
+    if (!cleanName) return;
+
+    setSyncError('');
+
+    try {
+      if (api.isApiConfigured) {
+        await api.deleteList(cleanName);
+      }
+
+      setLists((current) => current.filter((list) => list !== cleanName));
+      setPlaces((current) => current.map((place) => ({
+        ...place,
+        lists: (place.lists || []).filter((list) => list !== cleanName),
+      })));
+    } catch (error) {
+      setSyncError(error.message || 'Unable to delete list');
+      throw error;
+    }
+  };
+
   const value = useMemo(() => ({
     places,
     lists,
@@ -202,7 +254,9 @@ export function PlacesProvider({ children }) {
     isPersistent: api.isApiConfigured,
     addPlace,
     savePlace,
+    removeSavedPlace,
     createList,
+    deleteList,
     refresh,
   }), [places, lists, loading, syncError, refresh]);
 
