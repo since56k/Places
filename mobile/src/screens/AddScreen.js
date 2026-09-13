@@ -14,19 +14,52 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { usePlaces } from '../context/PlacesContext';
 import { colors, radius, spacing, typography } from '../theme';
 
 const defaultImage = 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=900&q=80';
 const categories = ['Restaurant', 'Café', 'Bar', 'Cocktail Bar', 'Wine Bar', 'Hotel', 'Bakery', 'Other'];
+const MAX_PHOTO_EDGE = 1600;
+const PHOTO_COMPRESSION = 0.62;
 
 function normalize(value = '') {
   return value.trim().toLocaleLowerCase();
 }
 
-function assetToDataUri(asset) {
-  if (!asset?.base64) return '';
-  return `data:${asset.mimeType || 'image/jpeg'};base64,${asset.base64}`;
+function approximateBase64Bytes(base64 = '') {
+  return Math.ceil((base64.length * 3) / 4);
+}
+
+async function compressPhoto(asset) {
+  const context = ImageManipulator.manipulate(asset.uri);
+  const width = Number(asset.width) || 0;
+  const height = Number(asset.height) || 0;
+
+  if (width >= height && width > MAX_PHOTO_EDGE) {
+    context.resize({ width: MAX_PHOTO_EDGE, height: null });
+  } else if (height > width && height > MAX_PHOTO_EDGE) {
+    context.resize({ width: null, height: MAX_PHOTO_EDGE });
+  }
+
+  const rendered = await context.renderAsync();
+  const result = await rendered.saveAsync({
+    compress: PHOTO_COMPRESSION,
+    format: SaveFormat.JPEG,
+    base64: true,
+  });
+
+  if (!result.base64) {
+    throw new Error('Unable to compress this photo.');
+  }
+
+  return {
+    uri: result.uri,
+    dataUri: `data:image/jpeg;base64,${result.base64}`,
+    width: result.width,
+    height: result.height,
+    bytes: approximateBase64Bytes(result.base64),
+  };
 }
 
 export default function AddScreen({ navigation }) {
@@ -38,6 +71,8 @@ export default function AddScreen({ navigation }) {
   const [address, setAddress] = useState('');
   const [photoUri, setPhotoUri] = useState('');
   const [photoData, setPhotoData] = useState('');
+  const [photoInfo, setPhotoInfo] = useState('');
+  const [processingPhoto, setProcessingPhoto] = useState(false);
   const [caption, setCaption] = useState('');
   const [status, setStatus] = useState('want_to_go');
   const [rating, setRating] = useState(0);
@@ -50,19 +85,25 @@ export default function AddScreen({ navigation }) {
   const [submitting, setSubmitting] = useState(false);
   const [creatingList, setCreatingList] = useState(false);
 
-  const applyPhotoResult = (result) => {
+  const applyPhotoResult = async (result) => {
     if (result.canceled || !result.assets?.[0]) return;
-    const asset = result.assets[0];
-    const dataUri = assetToDataUri(asset);
 
-    if (!dataUri) {
-      setError('Unable to read that photo. Please choose another image.');
-      return;
-    }
-
-    setPhotoUri(asset.uri);
-    setPhotoData(dataUri);
+    setProcessingPhoto(true);
     setError('');
+
+    try {
+      const compressed = await compressPhoto(result.assets[0]);
+      setPhotoUri(compressed.uri);
+      setPhotoData(compressed.dataUri);
+      setPhotoInfo(`${compressed.width}×${compressed.height} · ${Math.max(1, Math.round(compressed.bytes / 1024))} KB`);
+    } catch (photoError) {
+      setPhotoUri('');
+      setPhotoData('');
+      setPhotoInfo('');
+      setError(photoError.message || 'Unable to compress that photo. Please choose another image.');
+    } finally {
+      setProcessingPhoto(false);
+    }
   };
 
   const choosePhoto = async () => {
@@ -74,11 +115,12 @@ export default function AddScreen({ navigation }) {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      quality: 0.45,
-      base64: true,
+      quality: 1,
+      base64: false,
       allowsEditing: false,
     });
-    applyPhotoResult(result);
+
+    await applyPhotoResult(result);
   };
 
   const takePhoto = async () => {
@@ -90,17 +132,19 @@ export default function AddScreen({ navigation }) {
 
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ['images'],
-      quality: 0.45,
-      base64: true,
+      quality: 1,
+      base64: false,
       allowsEditing: false,
       cameraType: 'back',
     });
-    applyPhotoResult(result);
+
+    await applyPhotoResult(result);
   };
 
   const removePhoto = () => {
     setPhotoUri('');
     setPhotoData('');
+    setPhotoInfo('');
   };
 
   const toggleList = (list) => {
@@ -136,6 +180,7 @@ export default function AddScreen({ navigation }) {
     setAddress('');
     setPhotoUri('');
     setPhotoData('');
+    setPhotoInfo('');
     setCaption('');
     setStatus('want_to_go');
     setRating(0);
@@ -147,7 +192,7 @@ export default function AddScreen({ navigation }) {
   };
 
   const handleAdd = async () => {
-    if (submitting) return;
+    if (submitting || processingPhoto) return;
 
     if (!name.trim() || !city.trim() || !country.trim()) {
       setError('Name, city and country are required.');
@@ -221,16 +266,24 @@ export default function AddScreen({ navigation }) {
                 <View style={styles.photoIcon}>
                   <Ionicons name="image-outline" size={28} color={colors.accent} />
                 </View>
-                <Text style={styles.photoTitle}>Add a photo</Text>
-                <Text style={styles.photoHint}>Use a photo from your library or take one now.</Text>
+                <Text style={styles.photoTitle}>{processingPhoto ? 'Compressing photo...' : 'Add a photo'}</Text>
+                <Text style={styles.photoHint}>Photos are resized and compressed before they are saved.</Text>
               </View>
             )}
+
+            {!!photoInfo && (
+              <View style={styles.photoInfoRow}>
+                <Ionicons name="checkmark-circle-outline" size={15} color={colors.success} />
+                <Text style={styles.photoInfo}>Compressed · {photoInfo}</Text>
+              </View>
+            )}
+
             <View style={styles.photoActions}>
-              <TouchableOpacity onPress={choosePhoto} style={styles.secondaryButton}>
+              <TouchableOpacity disabled={processingPhoto} onPress={choosePhoto} style={[styles.secondaryButton, processingPhoto && styles.buttonDisabled]}>
                 <Ionicons name="images-outline" size={17} color={colors.accent} />
                 <Text style={styles.secondaryButtonText}>Library</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={takePhoto} style={styles.secondaryButton}>
+              <TouchableOpacity disabled={processingPhoto} onPress={takePhoto} style={[styles.secondaryButton, processingPhoto && styles.buttonDisabled]}>
                 <Ionicons name="camera-outline" size={17} color={colors.accent} />
                 <Text style={styles.secondaryButtonText}>Camera</Text>
               </TouchableOpacity>
@@ -327,9 +380,9 @@ export default function AddScreen({ navigation }) {
 
           {!!error && <Text style={styles.error}>{error}</Text>}
 
-          <TouchableOpacity disabled={submitting} onPress={handleAdd} style={[styles.primaryButton, submitting && styles.primaryButtonDisabled]}>
-            <Ionicons name={submitting ? 'cloud-upload-outline' : 'add'} size={20} color={colors.surface} />
-            <Text style={styles.primaryButtonText}>{submitting ? 'Saving...' : 'Add place'}</Text>
+          <TouchableOpacity disabled={submitting || processingPhoto} onPress={handleAdd} style={[styles.primaryButton, (submitting || processingPhoto) && styles.primaryButtonDisabled]}>
+            <Ionicons name={submitting ? 'cloud-upload-outline' : processingPhoto ? 'hourglass-outline' : 'add'} size={20} color={colors.surface} />
+            <Text style={styles.primaryButtonText}>{submitting ? 'Saving...' : processingPhoto ? 'Compressing photo...' : 'Add place'}</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -364,7 +417,9 @@ const styles = StyleSheet.create({
   photoEmpty: { minHeight: 176, padding: spacing.lg, alignItems: 'center', justifyContent: 'center', borderRadius: radius.lg, backgroundColor: colors.surfaceSoft },
   photoIcon: { width: 54, height: 54, borderRadius: 27, backgroundColor: colors.accentSoft, alignItems: 'center', justifyContent: 'center' },
   photoTitle: { marginTop: 12, fontFamily: typography.fontFamily.display, fontSize: 22, color: colors.text },
-  photoHint: { marginTop: 5, maxWidth: 260, textAlign: 'center', fontFamily: typography.fontFamily.body, fontSize: 12, lineHeight: 18, color: colors.textSecondary },
+  photoHint: { marginTop: 5, maxWidth: 270, textAlign: 'center', fontFamily: typography.fontFamily.body, fontSize: 12, lineHeight: 18, color: colors.textSecondary },
+  photoInfoRow: { paddingTop: 9, paddingHorizontal: 4, flexDirection: 'row', alignItems: 'center', gap: 5 },
+  photoInfo: { fontFamily: typography.fontFamily.medium, fontSize: 11, color: colors.textSecondary },
   photoActions: { marginTop: spacing.sm, flexDirection: 'row', gap: 8 },
   secondaryButton: { flex: 1, height: 44, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: colors.surface },
   secondaryButtonText: { fontFamily: typography.fontFamily.medium, fontSize: 12, color: colors.accentDark },
