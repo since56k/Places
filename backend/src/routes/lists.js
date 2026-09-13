@@ -36,6 +36,34 @@ router.post('/', async (req, res, next) => {
   }
 });
 
+router.patch('/by-name/:name', async (req, res, next) => {
+  try {
+    const userKey = req.body.userKey || req.query.userKey || DEFAULT_USER;
+    const currentName = decodeURIComponent(req.params.name).trim();
+    const nextName = req.body.name?.trim();
+
+    if (!nextName) {
+      return res.status(400).json({ message: 'List name is required' });
+    }
+
+    const list = await List.findOne({ userKey, name: currentName });
+    if (!list) {
+      return res.status(404).json({ message: 'List not found' });
+    }
+
+    const duplicate = await List.findOne({ userKey, name: nextName, _id: { $ne: list._id } });
+    if (duplicate) {
+      return res.status(409).json({ message: 'A list with this name already exists' });
+    }
+
+    list.name = nextName;
+    await list.save();
+    res.json(list);
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.delete('/by-name/:name', async (req, res, next) => {
   try {
     const userKey = req.query.userKey || DEFAULT_USER;
