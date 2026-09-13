@@ -73,6 +73,20 @@ function unsavedVersion(place) {
   };
 }
 
+function mergeCorePlace(existing, raw) {
+  const core = normalizePlace(raw);
+  return {
+    ...core,
+    status: existing.status,
+    rating: existing.rating,
+    price: existing.price,
+    note: existing.note,
+    tags: existing.tags,
+    lists: existing.lists,
+    isSaved: existing.isSaved,
+  };
+}
+
 export function PlacesProvider({ children }) {
   const [places, setPlaces] = useState(() => demoPlaces.map((place) => ({ ...place, isSaved: true })));
   const [lists, setLists] = useState(demoLists);
@@ -152,6 +166,68 @@ export function PlacesProvider({ children }) {
       return place;
     } catch (error) {
       setSyncError(error.message || 'Unable to add place');
+      throw error;
+    }
+  };
+
+  const updatePlace = async (placeId, input) => {
+    setSyncError('');
+
+    if (!api.isApiConfigured) {
+      let updatedPlace = null;
+      setPlaces((current) => current.map((place) => {
+        if (place.id !== placeId) return place;
+        updatedPlace = {
+          ...place,
+          name: input.name.trim(),
+          type: input.type.trim(),
+          city: input.city.trim(),
+          country: input.country.trim(),
+          address: input.address?.trim() || '',
+          caption: input.caption?.trim() || '',
+          description: input.description?.trim() || '',
+          imageUrl: input.imageUrl?.trim() || '',
+        };
+        return updatedPlace;
+      }));
+      return updatedPlace;
+    }
+
+    try {
+      const record = await api.updatePlace(placeId, {
+        name: input.name.trim(),
+        type: input.type.trim(),
+        city: input.city.trim(),
+        country: input.country.trim(),
+        address: input.address?.trim() || '',
+        caption: input.caption?.trim() || '',
+        description: input.description?.trim() || '',
+        imageUrl: input.imageUrl?.trim() || '',
+      });
+
+      let updatedPlace = null;
+      setPlaces((current) => current.map((place) => {
+        if (place.id !== placeId) return place;
+        updatedPlace = mergeCorePlace(place, record);
+        return updatedPlace;
+      }));
+      return updatedPlace;
+    } catch (error) {
+      setSyncError(error.message || 'Unable to update place');
+      throw error;
+    }
+  };
+
+  const deletePlace = async (placeId) => {
+    setSyncError('');
+
+    try {
+      if (api.isApiConfigured) {
+        await api.deletePlace(placeId);
+      }
+      setPlaces((current) => current.filter((place) => place.id !== placeId));
+    } catch (error) {
+      setSyncError(error.message || 'Unable to delete place');
       throw error;
     }
   };
@@ -256,6 +332,8 @@ export function PlacesProvider({ children }) {
     syncError,
     isPersistent: api.isApiConfigured,
     addPlace,
+    updatePlace,
+    deletePlace,
     savePlace,
     removeSavedPlace,
     createList,
