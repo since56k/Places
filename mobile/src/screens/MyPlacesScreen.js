@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Dimensions, Image, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, Image, KeyboardAvoidingView, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePlaces } from '../context/PlacesContext';
 import * as api from '../services/api';
@@ -381,31 +381,54 @@ export default function MyPlacesScreen({ navigation, route }) {
       </Modal>
 
       <Modal transparent visible={newListVisible} animationType="fade" onRequestClose={() => setNewListVisible(false)}>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.sheet}>
-            <View style={styles.sheetHandle} />
-            <Text style={styles.sheetTitle}>Create a list</Text>
-            <TextInput autoFocus value={newListName} onChangeText={setNewListName} placeholder="e.g. Tuscany weekends" placeholderTextColor={colors.textSecondary} style={styles.sheetInput} onSubmitEditing={handleCreateList} />
-            <View style={styles.sheetActions}>
-              <TouchableOpacity onPress={() => setNewListVisible(false)} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Cancel</Text></TouchableOpacity>
-              <TouchableOpacity onPress={handleCreateList} disabled={!newListName.trim() || listSaving} style={[styles.primaryButton, (!newListName.trim() || listSaving) && styles.disabledButton]}><Text style={styles.primaryButtonText}>{listSaving ? 'Creating...' : 'Create list'}</Text></TouchableOpacity>
+        <KeyboardAvoidingView style={styles.keyboardAvoider} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={12}>
+          <View style={styles.modalBackdrop}>
+            <View style={styles.sheet}>
+              <View style={styles.sheetHandle} />
+              <Text style={styles.sheetTitle}>Create a list</Text>
+              <TextInput
+                autoFocus
+                value={newListName}
+                onChangeText={setNewListName}
+                placeholder="e.g. Tuscany weekends"
+                placeholderTextColor={colors.textSecondary}
+                style={styles.sheetInput}
+                returnKeyType="done"
+                onSubmitEditing={handleCreateList}
+              />
+              <View style={styles.sheetActions}>
+                <TouchableOpacity onPress={() => setNewListVisible(false)} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Cancel</Text></TouchableOpacity>
+                <TouchableOpacity onPress={handleCreateList} disabled={!newListName.trim() || listSaving} style={[styles.primaryButton, (!newListName.trim() || listSaving) && styles.disabledButton]}><Text style={styles.primaryButtonText}>{listSaving ? 'Creating...' : 'Create list'}</Text></TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       <Modal transparent visible={renameListVisible} animationType="fade" onRequestClose={() => setRenameListVisible(false)}>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.sheet}>
-            <View style={styles.sheetHandle} />
-            <Text style={styles.sheetTitle}>Rename list</Text>
-            <TextInput autoFocus value={renameValue} onChangeText={setRenameValue} placeholder="List name" placeholderTextColor={colors.textSecondary} style={styles.sheetInput} onSubmitEditing={handleRenameList} />
-            <View style={styles.sheetActions}>
-              <TouchableOpacity onPress={() => setRenameListVisible(false)} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Cancel</Text></TouchableOpacity>
-              <TouchableOpacity onPress={handleRenameList} disabled={!renameValue.trim() || renaming} style={[styles.primaryButton, (!renameValue.trim() || renaming) && styles.disabledButton]}><Text style={styles.primaryButtonText}>{renaming ? 'Renaming...' : 'Rename'}</Text></TouchableOpacity>
+        <KeyboardAvoidingView style={styles.keyboardAvoider} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={12}>
+          <View style={styles.modalBackdrop}>
+            <View style={styles.sheet}>
+              <View style={styles.sheetHandle} />
+              <Text style={styles.sheetTitle}>Rename list</Text>
+              <TextInput
+                autoFocus
+                selectTextOnFocus
+                value={renameValue}
+                onChangeText={setRenameValue}
+                placeholder="List name"
+                placeholderTextColor={colors.textSecondary}
+                style={styles.sheetInput}
+                returnKeyType="done"
+                onSubmitEditing={handleRenameList}
+              />
+              <View style={styles.sheetActions}>
+                <TouchableOpacity onPress={() => setRenameListVisible(false)} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Cancel</Text></TouchableOpacity>
+                <TouchableOpacity onPress={handleRenameList} disabled={!renameValue.trim() || renaming} style={[styles.primaryButton, (!renameValue.trim() || renaming) && styles.disabledButton]}><Text style={styles.primaryButtonText}>{renaming ? 'Renaming...' : 'Rename'}</Text></TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       <Modal transparent visible={!!managePlace} animationType="fade" onRequestClose={() => setManagePlace(null)}>
@@ -496,6 +519,7 @@ const styles = StyleSheet.create({
   emptyText: { marginTop: 5, textAlign: 'center', fontFamily: typography.fontFamily.body, fontSize: 12, lineHeight: 18, color: colors.textSecondary },
   emptyButton: { marginTop: 14, paddingVertical: 10, paddingHorizontal: 16, borderRadius: radius.pill, backgroundColor: colors.accentSoft },
   emptyButtonText: { fontFamily: typography.fontFamily.semibold, fontSize: 12, color: colors.accentDark },
+  keyboardAvoider: { flex: 1 },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(23,23,23,0.32)', justifyContent: 'flex-end' },
   filterSheet: { maxHeight: '72%', paddingHorizontal: spacing.lg, paddingTop: 10, paddingBottom: 34, borderTopLeftRadius: 28, borderTopRightRadius: 28, backgroundColor: colors.background },
   sheet: { paddingHorizontal: spacing.lg, paddingTop: 10, paddingBottom: 34, borderTopLeftRadius: 28, borderTopRightRadius: 28, backgroundColor: colors.background },
