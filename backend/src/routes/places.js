@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import Place from '../models/Place.js';
+import SavedPlace from '../models/SavedPlace.js';
 
 const router = Router();
 
@@ -54,11 +55,26 @@ router.get('/:id', async (req, res, next) => {
 
 router.patch('/:id', async (req, res, next) => {
   try {
-    const place = await Place.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
+    const place = await Place.findById(req.params.id);
     if (!place) return res.status(404).json({ message: 'Place not found' });
+
+    const nextName = req.body.name?.trim() || place.name;
+    const nextCity = req.body.city?.trim() || place.city;
+    const nextCountry = req.body.country?.trim() || place.country;
+
+    const duplicate = await Place.findOne({
+      _id: { $ne: place._id },
+      name: exactCaseInsensitive(nextName),
+      city: exactCaseInsensitive(nextCity),
+      country: exactCaseInsensitive(nextCountry),
+    });
+
+    if (duplicate) {
+      return res.status(409).json({ message: 'This place is already in Places.' });
+    }
+
+    Object.assign(place, req.body);
+    await place.save();
     res.json(place);
   } catch (error) {
     next(error);
@@ -69,6 +85,8 @@ router.delete('/:id', async (req, res, next) => {
   try {
     const place = await Place.findByIdAndDelete(req.params.id);
     if (!place) return res.status(404).json({ message: 'Place not found' });
+
+    await SavedPlace.deleteMany({ place: place._id });
     res.status(204).end();
   } catch (error) {
     next(error);
