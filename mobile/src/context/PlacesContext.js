@@ -15,6 +15,7 @@ function normalizePlace(raw) {
     caption: raw.caption || '',
     description: raw.description || '',
     imageUrl: raw.imageUrl || '',
+    createdBy: raw.createdBy ? String(raw.createdBy._id || raw.createdBy) : '',
     status: null,
     rating: 0,
     price: 1,
@@ -50,6 +51,7 @@ function localPlaceFromInput(input) {
     caption: input.caption?.trim() || '',
     description: input.description?.trim() || '',
     imageUrl: input.imageUrl?.trim() || 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=900&q=80',
+    createdBy: 'local-demo',
     status: input.status || 'want_to_go',
     rating: Number(input.rating) || 0,
     price: Number(input.price) || 1,
@@ -88,8 +90,10 @@ function mergeCorePlace(existing, raw) {
 }
 
 export function PlacesProvider({ children }) {
-  const [places, setPlaces] = useState(() => demoPlaces.map((place) => ({ ...place, isSaved: true })));
-  const [lists, setLists] = useState(demoLists);
+  const [places, setPlaces] = useState(() => (
+    api.isApiConfigured ? [] : demoPlaces.map((place) => ({ ...place, createdBy: 'local-demo', isSaved: true }))
+  ));
+  const [lists, setLists] = useState(() => api.isApiConfigured ? [] : demoLists);
   const [loading, setLoading] = useState(api.isApiConfigured);
   const [syncError, setSyncError] = useState('');
 
@@ -120,7 +124,7 @@ export function PlacesProvider({ children }) {
       setPlaces(mergedPlaces);
       setLists(listRows.map((list) => list.name).filter(Boolean));
     } catch (error) {
-      setSyncError(error.message || 'Unable to sync Places');
+      setSyncError(error.message || 'Unable to sync Placebook');
     } finally {
       setLoading(false);
     }
