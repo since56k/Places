@@ -1,4 +1,4 @@
-const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
+const API_URL = process.env.EXPO_PUBLIC_API_URL?.trim().replace(/\/+$/, '');
 let authToken = '';
 
 export const isApiConfigured = Boolean(API_URL);
@@ -9,7 +9,7 @@ export function setAuthToken(token) {
 
 async function request(path, options = {}) {
   if (!API_URL) {
-    throw new Error('EXPO_PUBLIC_API_URL is not configured');
+    throw new Error('Sign in is unavailable in this build. Please contact the beta organizer.');
   }
 
   const response = await fetch(`${API_URL}${path}`, {
@@ -52,8 +52,14 @@ export function login(input) {
   });
 }
 
-export function getMe() {
-  return request('/api/auth/me');
+export async function getMe() {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+  try {
+    return await request('/api/auth/me', { signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export function getPlaces() {
