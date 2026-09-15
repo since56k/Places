@@ -1,0 +1,12 @@
+[
+  {
+    "path": "apple/Sources/ExpoModulesJSI/Runtime/JavaScriptRuntime.swift",
+    "before": "c13e50450d2efe6b8dc8c243b44cb13341331cca188ebea96fed308b5547d9dc",
+    "after": "2f927e0c3e6e302340b775005a661703f33ec6fa502a05a95cf614b90f8c3195"
+  },
+  {
+    "path": "apple/Sources/ExpoModulesJSI-Cxx/include/RuntimeScheduler.h",
+    "before": "ab3e6488b7e527210ecc1c8c58318c1e0ac5db3a489ddcc8ed5a11eaf6f7e5fb",
+    "after": "e61f2004fcba289fadc12f46763015253622097b233cc166afa4ac5f3362fa65"
+  }
+]
