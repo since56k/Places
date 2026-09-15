@@ -1,7 +1,11 @@
 const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
-const USER_KEY = 'test-user';
+let authToken = '';
 
 export const isApiConfigured = Boolean(API_URL);
+
+export function setAuthToken(token) {
+  authToken = token || '';
+}
 
 async function request(path, options = {}) {
   if (!API_URL) {
@@ -11,6 +15,7 @@ async function request(path, options = {}) {
   const response = await fetch(`${API_URL}${path}`, {
     headers: {
       'Content-Type': 'application/json',
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       ...(options.headers || {}),
     },
     ...options,
@@ -24,11 +29,31 @@ async function request(path, options = {}) {
     } catch (_error) {
       // Keep the fallback HTTP error message.
     }
-    throw new Error(message);
+    const error = new Error(message);
+    error.status = response.status;
+    throw error;
   }
 
   if (response.status === 204) return null;
   return response.json();
+}
+
+export function signup(input) {
+  return request('/api/auth/signup', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function login(input) {
+  return request('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function getMe() {
+  return request('/api/auth/me');
 }
 
 export function getPlaces() {
@@ -56,42 +81,42 @@ export function deletePlace(placeId) {
 }
 
 export function getSavedPlaces() {
-  return request(`/api/saved-places?userKey=${encodeURIComponent(USER_KEY)}`);
+  return request('/api/saved-places');
 }
 
 export function savePersonalPlace(placeId, input) {
   return request(`/api/saved-places/${placeId}`, {
     method: 'PUT',
-    body: JSON.stringify({ ...input, userKey: USER_KEY }),
+    body: JSON.stringify(input),
   });
 }
 
 export function deleteSavedPlace(placeId) {
-  return request(`/api/saved-places/${placeId}?userKey=${encodeURIComponent(USER_KEY)}`, {
+  return request(`/api/saved-places/${placeId}`, {
     method: 'DELETE',
   });
 }
 
 export function getLists() {
-  return request(`/api/lists?userKey=${encodeURIComponent(USER_KEY)}`);
+  return request('/api/lists');
 }
 
 export function createList(name) {
   return request('/api/lists', {
     method: 'POST',
-    body: JSON.stringify({ name, userKey: USER_KEY }),
+    body: JSON.stringify({ name }),
   });
 }
 
 export function renameList(currentName, nextName) {
   return request(`/api/lists/by-name/${encodeURIComponent(currentName)}`, {
     method: 'PATCH',
-    body: JSON.stringify({ name: nextName, userKey: USER_KEY }),
+    body: JSON.stringify({ name: nextName }),
   });
 }
 
 export function deleteList(name) {
-  return request(`/api/lists/by-name/${encodeURIComponent(name)}?userKey=${encodeURIComponent(USER_KEY)}`, {
+  return request(`/api/lists/by-name/${encodeURIComponent(name)}`, {
     method: 'DELETE',
   });
 }

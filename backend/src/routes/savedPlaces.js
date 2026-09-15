@@ -3,7 +3,6 @@ import List from '../models/List.js';
 import SavedPlace from '../models/SavedPlace.js';
 
 const router = Router();
-const DEFAULT_USER = 'test-user';
 
 function cleanTags(tags = []) {
   return [...new Set(tags.map((tag) => tag.trim()).filter(Boolean))];
@@ -21,7 +20,7 @@ async function resolveLists(userKey, names = []) {
 
 router.get('/', async (req, res, next) => {
   try {
-    const userKey = req.query.userKey || DEFAULT_USER;
+    const userKey = String(req.user._id);
     const savedPlaces = await SavedPlace.find({ userKey })
       .populate('place')
       .populate('lists')
@@ -35,7 +34,7 @@ router.get('/', async (req, res, next) => {
 
 router.put('/:placeId', async (req, res, next) => {
   try {
-    const userKey = req.body.userKey || DEFAULT_USER;
+    const userKey = String(req.user._id);
     const lists = await resolveLists(userKey, req.body.lists || []);
 
     const savedPlace = await SavedPlace.findOneAndUpdate(
@@ -63,7 +62,7 @@ router.put('/:placeId', async (req, res, next) => {
 
 router.delete('/:placeId', async (req, res, next) => {
   try {
-    const userKey = req.query.userKey || DEFAULT_USER;
+    const userKey = String(req.user._id);
     const savedPlace = await SavedPlace.findOneAndDelete({ userKey, place: req.params.placeId });
 
     if (!savedPlace) {

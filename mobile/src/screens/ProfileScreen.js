@@ -2,10 +2,12 @@ import React, { useMemo } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePlaces } from '../context/PlacesContext';
+import { useAuth } from '../context/AuthContext';
 import { colors, radius, spacing, typography } from '../theme';
 
 export default function ProfileScreen({ navigation }) {
   const { places, lists, isPersistent } = usePlaces();
+  const { user, logout } = useAuth();
 
   const stats = useMemo(() => {
     const saved = places.filter((place) => place.isSaved !== false);
@@ -29,8 +31,8 @@ export default function ProfileScreen({ navigation }) {
             <Ionicons name="person-outline" size={30} color={colors.accent} />
           </View>
           <View style={styles.profileCopy}>
-            <Text style={styles.profileName}>Places tester</Text>
-            <Text style={styles.profileMeta}>{isPersistent ? 'Synced with Railway' : 'Local demo mode'}</Text>
+            <Text style={styles.profileName}>{user?.name || 'Placebook'}</Text>
+            <Text style={styles.profileMeta}>{user?.email || (isPersistent ? 'Synced with Railway' : 'Local demo mode')}</Text>
           </View>
         </View>
 
@@ -63,13 +65,20 @@ export default function ProfileScreen({ navigation }) {
 
           <View style={styles.divider} />
           <View style={styles.infoRow}>
-            <View style={styles.infoIcon}><Ionicons name="leaf-outline" size={18} color={colors.success} /></View>
+            <View style={styles.infoIcon}><Ionicons name="shield-checkmark-outline" size={18} color={colors.success} /></View>
             <View style={styles.infoCopy}>
               <Text style={styles.infoTitle}>Private by design</Text>
-              <Text style={styles.infoText}>This testing profile is currently for your use only.</Text>
+              <Text style={styles.infoText}>Your lists, ratings, notes and saved places belong to your account.</Text>
             </View>
           </View>
         </View>
+
+        {isPersistent && (
+          <TouchableOpacity activeOpacity={0.82} onPress={logout} style={styles.logoutButton}>
+            <Ionicons name="log-out-outline" size={18} color={colors.error} />
+            <Text style={styles.logoutText}>Log out</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -113,4 +122,6 @@ const styles = StyleSheet.create({
   listChip: { maxWidth: '48%', paddingVertical: 8, paddingHorizontal: 12, borderRadius: radius.pill, backgroundColor: colors.accentSoft },
   listChipText: { fontFamily: typography.fontFamily.medium, fontSize: 12, color: colors.accentDark },
   divider: { height: 1, backgroundColor: colors.border },
+  logoutButton: { marginTop: spacing.lg, minHeight: 50, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  logoutText: { fontFamily: typography.fontFamily.semibold, fontSize: 14, color: colors.error },
 });

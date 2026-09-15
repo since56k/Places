@@ -10,6 +10,7 @@ const placeSchema = new mongoose.Schema(
     caption: { type: String, trim: true, default: '' },
     description: { type: String, trim: true, default: '' },
     imageUrl: { type: String, trim: true, default: '' },
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
     location: {
       latitude: Number,
       longitude: Number,

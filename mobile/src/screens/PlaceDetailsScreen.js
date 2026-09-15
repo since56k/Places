@@ -14,11 +14,13 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import SavePlaceModal from '../components/SavePlaceModal';
 import { usePlaces } from '../context/PlacesContext';
+import { useAuth } from '../context/AuthContext';
 import { colors, radius, spacing, typography } from '../theme';
 
 export default function PlaceDetailsScreen({ route, navigation }) {
   const { placeId } = route.params;
   const { places, removeSavedPlace, deletePlace } = usePlaces();
+  const { user } = useAuth();
   const [saveVisible, setSaveVisible] = useState(false);
 
   const place = useMemo(() => places.find((item) => item.id === placeId), [places, placeId]);
@@ -35,6 +37,7 @@ export default function PlaceDetailsScreen({ route, navigation }) {
   }
 
   const isSaved = place.isSaved !== false;
+  const canManage = user?.role === 'admin' || (place.createdBy && place.createdBy === user?.id);
 
   const confirmRemove = () => {
     Alert.alert(
@@ -128,10 +131,12 @@ export default function PlaceDetailsScreen({ route, navigation }) {
           {!!place.caption && <Text style={styles.caption}>{place.caption}</Text>}
 
           <View style={styles.quickActions}>
-            <TouchableOpacity style={styles.quickAction} onPress={() => navigation.navigate('EditPlace', { placeId: place.id })}>
-              <Ionicons name="pencil-outline" size={18} color={colors.accent} />
-              <Text style={styles.quickActionText}>Edit place</Text>
-            </TouchableOpacity>
+            {canManage && (
+              <TouchableOpacity style={styles.quickAction} onPress={() => navigation.navigate('EditPlace', { placeId: place.id })}>
+                <Ionicons name="pencil-outline" size={18} color={colors.accent} />
+                <Text style={styles.quickActionText}>Edit place</Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity style={styles.quickAction} onPress={openInMaps}>
               <Ionicons name="navigate-outline" size={18} color={colors.accent} />
               <Text style={styles.quickActionText}>Open in Maps</Text>
@@ -181,10 +186,12 @@ export default function PlaceDetailsScreen({ route, navigation }) {
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity style={styles.deleteButton} onPress={confirmDelete}>
-            <Ionicons name="trash-outline" size={17} color={colors.error} />
-            <Text style={styles.deleteButtonText}>Delete place permanently</Text>
-          </TouchableOpacity>
+          {canManage && (
+            <TouchableOpacity style={styles.deleteButton} onPress={confirmDelete}>
+              <Ionicons name="trash-outline" size={17} color={colors.error} />
+              <Text style={styles.deleteButtonText}>Delete place permanently</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
 

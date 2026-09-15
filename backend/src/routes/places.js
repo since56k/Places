@@ -9,6 +9,11 @@ function exactCaseInsensitive(value = '') {
   return new RegExp(`^${escaped}$`, 'i');
 }
 
+function canManagePlace(req, place) {
+  if (req.user.role === 'admin') return true;
+  return place.createdBy && String(place.createdBy) === String(req.user._id);
+}
+
 router.get('/', async (_req, res, next) => {
   try {
     const places = await Place.find().sort({ createdAt: -1 });
@@ -36,7 +41,7 @@ router.post('/', async (req, res, next) => {
       }
     }
 
-    const place = await Place.create(req.body);
+    const place = await Place.create({ ...req.body, createdBy: req.user._id });
     res.status(201).json(place);
   } catch (error) {
     next(error);
@@ -57,6 +62,9 @@ router.patch('/:id', async (req, res, next) => {
   try {
     const place = await Place.findById(req.params.id);
     if (!place) return res.status(404).json({ message: 'Place not found' });
+    if (!canManagePlace(req, place)) {
+      return res.status(403).json({ message: 'You can only edit places you created' });
+    }
 
     const nextName = req.body.name?.trim() || place.name;
     const nextCity = req.body.city?.trim() || place.city;
@@ -73,7 +81,10 @@ router.patch('/:id', async (req, res, next) => {
       return res.status(409).json({ message: 'This place is already in Places.' });
     }
 
-    Object.assign(place, req.body);
+    const allowed = ['name', 'type', 'city', 'country', 'address', 'caption', 'description', 'imageUrl', 'location'];
+    allowed.forEach((key) => {
+      if (Object.prototype.hasOwnProperty.call(req.body, key)) place[key] = req.body[key];
+    });
     await place.save();
     res.json(place);
   } catch (error) {
@@ -83,9 +94,13 @@ router.patch('/:id', async (req, res, next) => {
 
 router.delete('/:id', async (req, res, next) => {
   try {
-    const place = await Place.findByIdAndDelete(req.params.id);
+    const place = await Place.findById(req.params.id);
     if (!place) return res.status(404).json({ message: 'Place not found' });
+    if (!canManagePlace(req, place)) {
+      return res.status(403).json({ message: 'You can only delete places you created' });
+    }
 
+    await Place.deleteOne({ _id: place._id });
     await SavedPlace.deleteMany({ place: place._id });
     res.status(204).end();
   } catch (error) {
