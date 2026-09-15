@@ -3,11 +3,10 @@ import List from '../models/List.js';
 import SavedPlace from '../models/SavedPlace.js';
 
 const router = Router();
-const DEFAULT_USER = 'test-user';
 
 router.get('/', async (req, res, next) => {
   try {
-    const userKey = req.query.userKey || DEFAULT_USER;
+    const userKey = String(req.user._id);
     const lists = await List.find({ userKey }).sort({ name: 1 });
     res.json(lists);
   } catch (error) {
@@ -17,7 +16,7 @@ router.get('/', async (req, res, next) => {
 
 router.post('/', async (req, res, next) => {
   try {
-    const userKey = req.body.userKey || DEFAULT_USER;
+    const userKey = String(req.user._id);
     const name = req.body.name?.trim();
 
     if (!name) {
@@ -38,7 +37,7 @@ router.post('/', async (req, res, next) => {
 
 router.patch('/by-name/:name', async (req, res, next) => {
   try {
-    const userKey = req.body.userKey || req.query.userKey || DEFAULT_USER;
+    const userKey = String(req.user._id);
     const currentName = decodeURIComponent(req.params.name).trim();
     const nextName = req.body.name?.trim();
 
@@ -66,7 +65,7 @@ router.patch('/by-name/:name', async (req, res, next) => {
 
 router.delete('/by-name/:name', async (req, res, next) => {
   try {
-    const userKey = req.query.userKey || DEFAULT_USER;
+    const userKey = String(req.user._id);
     const name = decodeURIComponent(req.params.name).trim();
     const list = await List.findOne({ userKey, name });
 
@@ -88,7 +87,7 @@ router.delete('/by-name/:name', async (req, res, next) => {
 
 router.delete('/:id', async (req, res, next) => {
   try {
-    const userKey = req.query.userKey || DEFAULT_USER;
+    const userKey = String(req.user._id);
     const list = await List.findOneAndDelete({ _id: req.params.id, userKey });
 
     if (!list) {
