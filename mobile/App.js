@@ -20,7 +20,9 @@ import MyPlacesScreen from './src/screens/MyPlacesScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import PlaceDetailsScreen from './src/screens/PlaceDetailsScreen';
 import EditPlaceScreen from './src/screens/EditPlaceScreen';
+import AuthScreen from './src/screens/AuthScreen';
 import { PlacesProvider } from './src/context/PlacesContext';
+import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { colors, typography } from './src/theme';
 
 const Tab = createBottomTabNavigator();
@@ -94,6 +96,30 @@ function MainTabs() {
   );
 }
 
+function AppContent() {
+  const { ready, isAuthenticated } = useAuth();
+
+  if (!ready) {
+    return <View style={{ flex: 1, backgroundColor: colors.background }} />;
+  }
+
+  if (!isAuthenticated) {
+    return <AuthScreen />;
+  }
+
+  return (
+    <PlacesProvider>
+      <NavigationContainer>
+        <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
+          <Stack.Screen name="Main" component={MainTabs} />
+          <Stack.Screen name="PlaceDetails" component={PlaceDetailsScreen} />
+          <Stack.Screen name="EditPlace" component={EditPlaceScreen} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </PlacesProvider>
+  );
+}
+
 export default function App() {
   const [fontsLoaded] = useFonts({
     DMSerifDisplay_400Regular,
@@ -108,15 +134,9 @@ export default function App() {
   }
 
   return (
-    <PlacesProvider>
+    <AuthProvider>
       <StatusBar style="dark" />
-      <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
-          <Stack.Screen name="Main" component={MainTabs} />
-          <Stack.Screen name="PlaceDetails" component={PlaceDetailsScreen} />
-          <Stack.Screen name="EditPlace" component={EditPlaceScreen} />
-        </Stack.Navigator>
-      </NavigationContainer>
-    </PlacesProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
