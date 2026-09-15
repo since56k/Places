@@ -19,7 +19,8 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.since56k.places"
+      "bundleIdentifier": "com.since56k.places",
+      "buildNumber": "2"
     },
     "android": {
       "package": "com.since56k.places",

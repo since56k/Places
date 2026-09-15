@@ -29,3 +29,6 @@ yarn-error.log*
 
 # coverage
 coverage/
+
+# Local signing configuration
+/mobile/credentials.json
