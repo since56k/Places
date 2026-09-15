@@ -97,7 +97,7 @@ cd mobile
 npm start
 ```
 
-When `EXPO_PUBLIC_API_URL` is present, Places loads and persists data through the backend. When it is absent, the V0.1 app falls back to demo data for UI development.
+When `EXPO_PUBLIC_API_URL` is present, Places requires a server-validated account before loading personal data. Without it, Sign in stays visible and disabled with a build-configuration message; there is no automatic demo login. Copy `mobile/.env.example` to `mobile/.env` for local Expo and Xcode builds, then restart Expo with `npx expo start --clear`. Ensure the same variable is present in the production build environment before archiving for TestFlight. Existing valid sessions resume after server validation; use Profile → Log out to test a fresh sign-in.
 
 ## Deployment checklist
 
@@ -113,3 +113,14 @@ When `EXPO_PUBLIC_API_URL` is present, Places loads and persists data through th
 ## Existing infrastructure
 
 Do not overwrite unrelated or legacy Railway services when testing Places. Use a dedicated Places service so the V0.1 backend can evolve independently and can be removed safely if needed.
+
+
+### Accounts V1 beta checks
+
+- Run `cd mobile && npm test` for auth-provider and App/AuthScreen regression tests with mocked native components, storage and HTTP responses.
+- Run `npx expo export --platform ios --output-dir /tmp/places-ios-check` from `mobile` to verify the production iOS JavaScript bundle. This does not replace a signed Xcode archive or device testing.
+- With the API configured and no saved session, launch Expo: Sign in must appear.
+- Sign in, restart, and confirm a valid saved session resumes only after server validation. Use Profile → Log out to return to Sign in.
+- With the API missing or blank, restart Expo with a cleared cache: Sign in must stay visible and disabled, with no Places tester account.
+- Invalid sessions, invalid server responses, storage failures and failed/timed-out validation must never open the main app. Session validation times out after 15 seconds; failed validation clears the saved session where storage permits it.
+- Before TestFlight, confirm unauthenticated `GET /api/auth/me` returns **401**, not **404**. A successful `/health` response alone does not verify that the deployed backend includes Accounts V1.

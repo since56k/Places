@@ -51,7 +51,7 @@ Places/
 └── README.md
 ```
 
-The mobile app communicates with the backend through a JSON REST API. The backend is designed to run on Railway. During V0.1 the app uses a single `test-user` identity while keeping personal state separate from shared Place data.
+The mobile app communicates with the backend through a JSON REST API. The backend is designed to run on Railway. Accounts V1 uses authenticated user accounts and keeps personal state separate from shared Place data.
 
 ## Development
 
@@ -72,7 +72,7 @@ npm start
 
 Set `EXPO_PUBLIC_API_URL` in `mobile/.env` to the backend URL. For testing on a physical iPhone, use the public Railway URL rather than localhost.
 
-If `EXPO_PUBLIC_API_URL` is not configured, the app remains usable in local demo mode with in-memory data. This is intentional so UI development is not blocked by backend setup.
+Accounts V1 requires `EXPO_PUBLIC_API_URL`. If it is missing or blank, the app stays on Sign in with an English build-configuration message; it never creates a demo account. A saved session resumes only after `/api/auth/me` validates it. Use Profile → Log out to test Sign in again with a valid existing session.
 
 ### Backend
 

@@ -15,7 +15,7 @@ import { useAuth } from '../context/AuthContext';
 import { colors, radius, spacing, typography } from '../theme';
 
 export default function AuthScreen() {
-  const { login, signup, authError } = useAuth();
+  const { login, signup, authError, canAuthenticate } = useAuth();
   const [mode, setMode] = useState('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -25,6 +25,7 @@ export default function AuthScreen() {
   const isSignup = mode === 'signup';
 
   const submit = async () => {
+    if (!canAuthenticate || submitting) return;
     if (!email.trim() || !password || (isSignup && !name.trim())) return;
     setSubmitting(true);
     try {
@@ -96,18 +97,22 @@ export default function AuthScreen() {
               onSubmitEditing={submit}
             />
 
+            {!canAuthenticate && (
+              <Text style={styles.error}>Sign in is unavailable in this build. Please contact the beta organizer.</Text>
+            )}
+
             {!!authError && <Text style={styles.error}>{authError}</Text>}
 
             <TouchableOpacity
               activeOpacity={0.86}
               onPress={submit}
-              disabled={submitting}
-              style={[styles.primaryButton, submitting && styles.disabled]}
+              disabled={submitting || !canAuthenticate}
+              style={[styles.primaryButton, (submitting || !canAuthenticate) && styles.disabled]}
             >
               {submitting ? (
                 <ActivityIndicator color={colors.surface} />
               ) : (
-                <Text style={styles.primaryButtonText}>{isSignup ? 'Create account' : 'Log in'}</Text>
+                <Text style={styles.primaryButtonText}>{isSignup ? 'Create account' : 'Sign in'}</Text>
               )}
             </TouchableOpacity>
 
@@ -119,7 +124,7 @@ export default function AuthScreen() {
               style={styles.switchButton}
             >
               <Text style={styles.switchText}>
-                {isSignup ? 'Already have an account? Log in' : 'New to Placebook? Create account'}
+                {isSignup ? 'Already have an account? Sign in' : 'New to Placebook? Create account'}
               </Text>
             </TouchableOpacity>
           </View>
